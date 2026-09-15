@@ -94,16 +94,20 @@ def after_all(_context):
 
 
 def after_scenario(context, scenario):
-    if getattr(scenario, 'status') == 'failed':
-        log_out_user_context_values(context, CONTEXT_ATTRIBUTES)
+    try:
+        if getattr(scenario, 'status') == 'failed':
+            log_out_user_context_values(context, CONTEXT_ATTRIBUTES)
 
-    unexpected_bad_messages = get_bad_messages()
+        unexpected_bad_messages = get_bad_messages()
 
-    if unexpected_bad_messages:
-        _record_and_remove_any_unexpected_bad_messages(unexpected_bad_messages)
-
-    if 'UI' in context.tags:
-        context.browser.quit()
+        if unexpected_bad_messages:
+            _record_and_remove_any_unexpected_bad_messages(unexpected_bad_messages)
+    finally:
+        if 'UI' in context.tags and getattr(context, 'browser', None):
+            try:
+                context.browser.quit()
+            except Exception:
+                logger.exception('Failed to quit browser during after_scenario teardown')
 
     if "reset_eq_stub" in scenario.tags:
         reset_eq_stub()
